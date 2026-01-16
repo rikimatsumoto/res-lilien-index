@@ -1,0 +1,77 @@
+# ============================================
+# SECURITY - NEVER COMMIT THESE FILES
+# ============================================
+
+# Environment variables (API keys)
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+*.env
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Config files that might contain secrets
+config.yaml
+config.json
+secrets.yaml
+secrets.json
+credentials.json
+
+# ============================================
+# Python
+# ============================================
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Exported forecasts (optional - remove if you want to track these)
+# *.json
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/

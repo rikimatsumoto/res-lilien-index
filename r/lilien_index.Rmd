@@ -1,0 +1,90 @@
+---
+title: "temp"
+author: "Riki Matsumoto"
+date: "11/23/2020"
+output: html_document
+---
+
+```{r setup, message=FALSE, error=FALSE, warning=FALSE, include=FALSE}
+################################################################################
+# Load packages & dataset #
+################################################################################
+# Load packages
+library(tidyverse); library(ggrepel); library(lubridate); library(readxl); library(tidyquant)
+
+palette_3 <- c("#2d6074","#e6b752","#188c81")
+palette_4 <- c("#2d6074","#e6b752","#188c81","#d5624b")
+palette_5 <- c("#2d6074","#e6b752","#29adde","#188c81","#896a5f")
+palette_8 <- c("#2d6074","#53849a","#29adde","#bbe9fb","#188c81","#e6b752","#896a5f","#7c2510")
+palette_10 <- c("#2d6074","#29adde","#bbe9fb","#188c81","#e6b752","#f2523a","#843215","#96503F", "#ca5800",
+                "#0a4c6a")
+palette_15 <- c("#2d6074","#53849a","#29adde","#bbe9fb","#188c81","#e6b752","#896a5f","#7c2510",
+                "#f2523a","#843215","#d5624b","#96503F","#e69177","#1696d2","#0a4c6a")
+fund_palette <- c("#a6393e", "#349eb1", "#bf7932", "#609d2c", "#8b5c78", "#226d81", "#f73f3d", "#117739", "#753f41",
+                  "#848102")
+
+
+```
+
+
+```{r}
+# Get the list of `get` options
+#tq_get_options()
+
+nikkei_index_names <- c("^NG01.OS", "^NG02.OS", "^NG03.OS","^NG04.OS", "^NG05.OS", "^NG06.OS", "^NG07.OS")
+
+# Get stock prices for a stock from Yahoo
+nikkei_index_prices <- tq_get(nikkei_index_names)
+
+# Create data for Lilien analysis
+nikkei_industry_lilien <- nikkei_index_prices %>%
+  rename(nikkei_industry_index = symbol,
+         x_value = open) %>%
+  select(nikkei_industry_index, x_value, date)
+
+# Remove/drop old variables
+remove(nikkei_index_names, nikkei_index_prices)
+```
+
+Below is the step-by-step reproduction of the Lilien Index calculation using tidyverse.
+
+```{r calculation, message=FALSE, error=FALSE, warning=FALSE, include=TRUE}
+nikkei_industry_lilien_clean <- nikkei_industry_lilien %>%
+  mutate(date = ymd(date)) %>%
+  filter(!date %in% c("2020-10-01", "2020-10-02"))  
+
+lilien_index <- nikkei_industry_lilien_clean %>%
+    arrange(nikkei_industry_index, date) %>%
+    dplyr::group_by(date) %>%
+    dplyr::mutate(s_sum1 = sum(x_value, na.rm = TRUE),
+           share1 = x_value/s_sum1 * 100) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(nikkei_industry_index) %>%
+    # Lag sectoral employment
+    dplyr::mutate(l.value = dplyr::lag(x_value, n = 1, default = NA, order_by = date),
+           l.s_sum1 = dplyr::lag(s_sum1, n = 1, default = NA, order_by = date)) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(date) %>%
+    # Compute sectoral growth
+    dplyr::mutate(sgrowth1 = log(s_sum1/l.s_sum1),
+           igrowth1 = log(x_value/l.value)) %>%
+    dplyr::group_by(date) %>%
+    # Compute final Lilien Index
+    dplyr::summarise(index1 = sum(((igrowth1 - sgrowth1)^2)*share1),
+              LI = sqrt(index1)) %>%
+    dplyr::select(date, LI)
+```
+
+Or, simply use the function from the R script (run r/lilien_index.R)
+
+```{r}
+lilien_index_2 <- lilien_index(nikkei_industry_lilien_clean, nikkei_industry_index, date, x_value)
+```
+
+
+```{r}
+lilien_index_2 %>%
+  ggplot(aes(y = LI, x = date)) +
+  geom_line(size = 0.25, color = "#2d6074")
+```
+
